@@ -13,7 +13,7 @@ $$r = \\frac{\\ln(|R_0|)}{T} \\cdot \\text{signo}(R_0)$$
 col_control1, col_control2 = st.columns(2)
 
 with col_control1:
-    st.subheader("🔴 Escenario 1 (Positivo)")
+    st.subheader("🔴 Escenario 1 (Base / Positivo)")
     R0_1 = st.slider("R0 - Tasa Neta", -50.0, 50.0, 31.2, step=0.1, key="r1")
     T_1 = st.slider("T - Tiempo Generacional", 0.1, 20.0, 8.96, step=0.01, key="t1")
     r1 = (np.log(abs(R0_1)) / T_1) if R0_1 != 0 else 0
@@ -22,7 +22,7 @@ with col_control1:
     st.metric("Tasa intrínseca (r1)", f"{r1:.4f}")
 
 with col_control2:
-    st.subheader("🔵 Escenario 2 (Negativo / Control)")
+    st.subheader("🔵 Escenario 2 (Control / Negativo)")
     R0_2 = st.slider("R0 - Tasa Neta ", -50.0, 50.0, -20.0, step=0.1, key="r2")
     T_2 = st.slider("T - Tiempo Generacional ", 0.1, 20.0, 4.5, step=0.01, key="t2")
     r2 = (np.log(abs(R0_2)) / T_2) if R0_2 != 0 else 0
@@ -33,10 +33,10 @@ with col_control2:
 N0 = st.sidebar.number_input("Población inicial (N0)", value=10, min_value=1)
 t_max = st.sidebar.slider("Rango Tiempo (Eje X)", 10, 100, 60)
 
-# Puntos discontinuos tipo GeoGebra para armar los cuadrantes
+# Puntos discretos para simular los marcadores estilo GeoGebra
 t_puntos = np.linspace(0, t_max, 25)
 
-# Calculamos trayectoria positiva y espejo negativo si r < 0
+# Calculamos trayectoria según el signo de r
 if r1 >= 0:
     y1 = N0 * np.exp(r1 * (t_puntos / 10)) - N0
 else:
@@ -49,31 +49,31 @@ else:
 
 fig = go.Figure()
 
-# Trazo Escenario 1 con marcadores tipo GeoGebra
+# Escenario 1: ROJO (Línea continua con puntos rojos)
 fig.add_trace(
     go.Scatter(
         x=t_puntos,
         y=y1,
         mode="lines+markers",
         name=f"Escenario 1 (r={r1:.3f})",
-        line=dict(color="blue", width=2),
-        marker=dict(size=8, symbol="circle", color="blue"),
+        line=dict(color="red", width=2.5),
+        marker=dict(size=8, symbol="circle", color="crimson"),
     )
 )
 
-# Trazo Escenario 2 (Cuadrante Inferior)
+# Escenario 2: AZUL (Línea punteada con puntos azules)
 fig.add_trace(
     go.Scatter(
         x=t_puntos,
         y=y2,
         mode="lines+markers",
         name=f"Escenario 2 (r={r2:.3f})",
-        line=dict(color="darkblue", width=2),
+        line=dict(color="blue", width=2.5, dash="dash"),
         marker=dict(size=8, symbol="circle", color="royalblue"),
     )
 )
 
-# Estilizado para simular la rejilla exacta de GeoGebra
+# Rejilla estilo plano cartesiano / GeoGebra
 fig.update_xaxes(
     range=[-2, t_max],
     zeroline=True,
