@@ -6,7 +6,7 @@ st.set_page_config(page_title="Simulador Ecológico", layout="wide")
 st.title("📊 Simulador Interactivo de Crecimiento Poblacional")
 
 st.markdown("""
-Visualización cartesiana del modelo en cuadrantes:
+Visualización cartesiana en cuadrantes con Eje Y fijo:
 $$r = \\frac{\\ln(|R_0|)}{T} \\cdot \\text{signo}(R_0)$$
 """)
 
@@ -15,7 +15,9 @@ col_control1, col_control2 = st.columns(2)
 with col_control1:
     st.subheader("🔴 Escenario 1 (Base / Positivo)")
     R0_1 = st.slider("R0 - Tasa Neta", -50.0, 50.0, 31.2, step=0.1, key="r1")
-    T_1 = st.slider("T - Tiempo Generacional", 0.1, 20.0, 8.96, step=0.01, key="t1")
+    T_1 = st.slider(
+        "T - Tiempo Generacional", 0.1, 20.0, 8.96, step=0.01, key="t1"
+    )
     r1 = (np.log(abs(R0_1)) / T_1) if R0_1 != 0 else 0
     if R0_1 < 0:
         r1 = -r1
@@ -24,7 +26,9 @@ with col_control1:
 with col_control2:
     st.subheader("🔵 Escenario 2 (Control / Negativo)")
     R0_2 = st.slider("R0 - Tasa Neta ", -50.0, 50.0, -20.0, step=0.1, key="r2")
-    T_2 = st.slider("T - Tiempo Generacional ", 0.1, 20.0, 4.5, step=0.01, key="t2")
+    T_2 = st.slider(
+        "T - Tiempo Generacional ", 0.1, 20.0, 4.5, step=0.01, key="t2"
+    )
     r2 = (np.log(abs(R0_2)) / T_2) if R0_2 != 0 else 0
     if R0_2 < 0:
         r2 = -r2
@@ -33,10 +37,10 @@ with col_control2:
 N0 = st.sidebar.number_input("Población inicial (N0)", value=10, min_value=1)
 t_max = st.sidebar.slider("Rango Tiempo (Eje X)", 10, 100, 60)
 
-# Puntos discretos para simular los marcadores estilo GeoGebra
+# Puntos discretos estilo GeoGebra
 t_puntos = np.linspace(0, t_max, 25)
 
-# Calculamos trayectoria según el signo de r
+# Cálculo de trayectorias
 if r1 >= 0:
     y1 = N0 * np.exp(r1 * (t_puntos / 10)) - N0
 else:
@@ -49,7 +53,7 @@ else:
 
 fig = go.Figure()
 
-# Escenario 1: ROJO (Línea continua con puntos rojos)
+# Trazo Escenario 1 (Rojo)
 fig.add_trace(
     go.Scatter(
         x=t_puntos,
@@ -61,7 +65,7 @@ fig.add_trace(
     )
 )
 
-# Escenario 2: AZUL (Línea punteada con puntos azules)
+# Trazo Escenario 2 (Azul)
 fig.add_trace(
     go.Scatter(
         x=t_puntos,
@@ -73,9 +77,10 @@ fig.add_trace(
     )
 )
 
-# Rejilla estilo plano cartesiano / GeoGebra
+# Eje X: arranca exactamente en 0 (sin valores negativos)
 fig.update_xaxes(
-    range=[-2, t_max],
+    range=[0, t_max],
+    rangemode="nonnegative",  # Bloquea el zoom para no ir a la izquierda del origen (X < 0)
     zeroline=True,
     zerolinewidth=2,
     zerolinecolor="black",
@@ -85,8 +90,10 @@ fig.update_xaxes(
     dtick=10,
 )
 
+# Eje Y: inamovible (fixedrange=True) para que conserve la escala exacta
 fig.update_yaxes(
     range=[-25, 45],
+    fixedrange=True,  # Inmoviliza el eje Y contra zoom o desplazamiento vertical
     zeroline=True,
     zerolinewidth=2,
     zerolinecolor="black",
