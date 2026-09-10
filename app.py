@@ -6,107 +6,89 @@ st.set_page_config(page_title="Simulador Ecológico", layout="wide")
 st.title("📊 Simulador Interactivo de Crecimiento Poblacional")
 
 st.markdown("""
-Visualización cartesiana del modelo iniciando estrictamente en $t = 0$:
-$$r = \\frac{\\ln(|R_0|)}{T} \\cdot \\text{signo}(R_0)$$
+Ajusta los parámetros para observar cómo responde la tasa intrínseca de crecimiento $r$ 
+y la trayectoria de la población según la fórmula:  
+$$r = \\frac{\\ln(R_0)}{T}$$
+
+* **$R_0 > 1.0 \\implies r > 0$**: Crecimiento poblacional.
+* **$R_0 = 1.0 \\implies r = 0$**: Población estable (reemplazo exacto).
+* **$R_0 < 1.0 \\implies r < 0$**: Declive/Extinción poblacional.
 """)
 
 col_control1, col_control2 = st.columns(2)
 
 with col_control1:
-    st.subheader("🔴 Escenario 1 (Base / Positivo)")
-    R0_1 = st.slider("R0 - Tasa Neta", -50.0, 50.0, 31.2, step=0.1, key="r1")
+    st.subheader("🔴 Escenario 1 (Base)")
+    # Permitimos valores de R0 desde 0.01 para generar r negativas
+    R0_1 = st.slider(
+        "R0 - Tasa Neta de Reproducción", 0.01, 50.0, 31.2, step=0.01, key="r1"
+    )
     T_1 = st.slider(
         "T - Tiempo Generacional", 0.1, 20.0, 8.96, step=0.01, key="t1"
     )
-    r1 = (np.log(abs(R0_1)) / T_1) if R0_1 != 0 else 0
-    if R0_1 < 0:
-        r1 = -r1
+    r1 = np.log(R0_1) / T_1
     st.metric("Tasa intrínseca (r1)", f"{r1:.4f}")
 
 with col_control2:
-    st.subheader("🔵 Escenario 2 (Control / Negativo)")
-    R0_2 = st.slider("R0 - Tasa Neta ", -50.0, 50.0, -20.0, step=0.1, key="r2")
+    st.subheader("🔵 Escenario 2 (Comparación)")
+    R0_2 = st.slider(
+        "R0 - Tasa Neta de Reproducción ",
+        0.01,
+        50.0,
+        0.50,
+        step=0.01,
+        key="r2",
+    )
     T_2 = st.slider(
         "T - Tiempo Generacional ", 0.1, 20.0, 4.5, step=0.01, key="t2"
     )
-    r2 = (np.log(abs(R0_2)) / T_2) if R0_2 != 0 else 0
-    if R0_2 < 0:
-        r2 = -r2
+    r2 = np.log(R0_2) / T_2
     st.metric("Tasa intrínseca (r2)", f"{r2:.4f}")
 
-N0 = st.sidebar.number_input("Población inicial (N0)", value=10, min_value=1)
-t_max = st.sidebar.slider("Rango Tiempo (Eje X)", 10, 100, 60)
+# Parámetros generales en el panel lateral
+N0 = st.sidebar.number_input(
+    "Población inicial de hembras (N0)", value=100, min_value=1
+)
+t_max = st.sidebar.slider("Horizonte de tiempo (t)", 5, 100, 30)
 
-# Puntos de tiempo estrictamente desde t = 0
-t_puntos = np.linspace(0, t_max, 30)
+# Cálculos de proyección
+t = np.linspace(0, t_max, 300)
+N1 = N0 * np.exp(r1 * t)
+N2 = N0 * np.exp(r2 * t)
 
-# Cálculo de trayectorias
-if r1 >= 0:
-    y1 = N0 * np.exp(r1 * (t_puntos / 10)) - N0
-else:
-    y1 = -(N0 * np.exp(abs(r1) * (t_puntos / 10)) - N0)
-
-if r2 >= 0:
-    y2 = N0 * np.exp(r2 * (t_puntos / 10)) - N0
-else:
-    y2 = -(N0 * np.exp(abs(r2) * (t_puntos / 10)) - N0)
-
+# Gráfico interactivo con Plotly
 fig = go.Figure()
 
-# Trazo Escenario 1 (Rojo)
 fig.add_trace(
     go.Scatter(
-        x=t_puntos,
-        y=y1,
-        mode="lines+markers",
+        x=t,
+        y=N1,
+        mode="lines",
         name=f"Escenario 1 (r={r1:.3f})",
-        line=dict(color="red", width=2.5),
-        marker=dict(size=8, symbol="circle", color="crimson"),
+        line=dict(color="red", width=3),
     )
 )
 
-# Trazo Escenario 2 (Azul)
 fig.add_trace(
     go.Scatter(
-        x=t_puntos,
-        y=y2,
-        mode="lines+markers",
+        x=t,
+        y=N2,
+        mode="lines",
         name=f"Escenario 2 (r={r2:.3f})",
-        line=dict(color="blue", width=2.5, dash="dash"),
-        marker=dict(size=8, symbol="circle", color="royalblue"),
+        line=dict(color="blue", width=3, dash="dash"),
     )
 )
 
-# Configuración estricta del Eje X: Arranque en 0 sin valores negativos a la izquierda
-fig.update_xaxes(
-    range=[0, t_max],
-    autorange=False,  # Impide que el gráfico auto-genere ticks negativos (-10, -20...)
-    zeroline=True,
-    zerolinewidth=2,
-    zerolinecolor="black",
-    showgrid=True,
-    gridwidth=1,
-    gridcolor="lightgray",
-    dtick=10,
-)
-
-# Configuración del Eje Y: Escala libre/auto-ajustable según el crecimiento sin tope en 40
-fig.update_yaxes(
-    autorange=True,  # Permite que la magnitud crezca libremente hacia arriba o abajo
-    zeroline=True,
-    zerolinewidth=2,
-    zerolinecolor="black",
-    showgrid=True,
-    gridwidth=1,
-    gridcolor="lightgray",
+# Línea de referencia si la población se extingue o colapsa a 0
+fig.add_hline(
+    y=0, line_dash="dot", line_color="gray", annotation_text="Límite de Extinción (N=0)"
 )
 
 fig.update_layout(
-    template="plotly_white",
-    height=650,
-    margin=dict(l=40, r=40, t=40, b=40),
     xaxis_title="Tiempo (t)",
-    yaxis_title="Magnitud / Crecimiento (dN/dt)",
+    yaxis_title="Número de Hembras N(t)",
+    template="plotly_white",
+    hovermode="x unified",
 )
 
 st.plotly_chart(fig, use_container_width=True)
