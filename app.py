@@ -6,7 +6,7 @@ st.set_page_config(page_title="Simulador Ecológico", layout="wide")
 st.title("📊 Simulador Interactivo de Crecimiento Poblacional")
 
 st.markdown("""
-Visualización cartesiana en cuadrantes con Eje Y fijo:
+Visualización cartesiana del modelo iniciando estrictamente en $t = 0$:
 $$r = \\frac{\\ln(|R_0|)}{T} \\cdot \\text{signo}(R_0)$$
 """)
 
@@ -37,8 +37,8 @@ with col_control2:
 N0 = st.sidebar.number_input("Población inicial (N0)", value=10, min_value=1)
 t_max = st.sidebar.slider("Rango Tiempo (Eje X)", 10, 100, 60)
 
-# Puntos discretos estilo GeoGebra
-t_puntos = np.linspace(0, t_max, 25)
+# Puntos de tiempo estrictamente desde t = 0
+t_puntos = np.linspace(0, t_max, 30)
 
 # Cálculo de trayectorias
 if r1 >= 0:
@@ -77,10 +77,10 @@ fig.add_trace(
     )
 )
 
-# Eje X: arranca exactamente en 0 (sin valores negativos)
+# Configuración estricta del Eje X: Arranque en 0 sin valores negativos a la izquierda
 fig.update_xaxes(
     range=[0, t_max],
-    rangemode="nonnegative",  # Bloquea el zoom para no ir a la izquierda del origen (X < 0)
+    autorange=False,  # Impide que el gráfico auto-genere ticks negativos (-10, -20...)
     zeroline=True,
     zerolinewidth=2,
     zerolinecolor="black",
@@ -90,17 +90,15 @@ fig.update_xaxes(
     dtick=10,
 )
 
-# Eje Y: inamovible (fixedrange=True) para que conserve la escala exacta
+# Configuración del Eje Y: Escala libre/auto-ajustable según el crecimiento sin tope en 40
 fig.update_yaxes(
-    range=[-25, 45],
-    fixedrange=True,  # Inmoviliza el eje Y contra zoom o desplazamiento vertical
+    autorange=True,  # Permite que la magnitud crezca libremente hacia arriba o abajo
     zeroline=True,
     zerolinewidth=2,
     zerolinecolor="black",
     showgrid=True,
     gridwidth=1,
     gridcolor="lightgray",
-    dtick=10,
 )
 
 fig.update_layout(
